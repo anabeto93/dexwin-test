@@ -20,8 +20,12 @@
     <div id="redoc"></div>
     <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
     <script>
+      // Get the current origin
+      const origin = window.location.origin;
+      const docsUrl = origin + '{!! str_replace(url('/'), '', $urlToDocs) !!}';
+      
       Redoc.init(
-        '{!! url($urlToDocs) !!}',
+        docsUrl,
         {
           theme: {
             colors: {
@@ -38,7 +42,11 @@
                 fontWeight: '600'
               }
             }
-          }
+          },
+          expandResponses: "200,201",
+          hideDownloadButton: true,
+          disableSearch: false,
+          requiredPropsFirst: true
         },
         document.getElementById('redoc')
       );
