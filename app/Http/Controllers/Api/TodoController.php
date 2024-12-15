@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Todo;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Todo\ListTodoRequest;
+use App\Http\Requests\Todo\StoreTodoRequest;
+use App\Http\Requests\Todo\UpdateTodoRequest;
+use App\Services\TodoService;
+use Illuminate\Http\JsonResponse;
 
 /**
  * @OA\Info(
@@ -17,6 +18,11 @@ use Illuminate\Support\Facades\Validator;
  */
 class TodoController extends Controller
 {
+    public function __construct(
+        private readonly TodoService $todoService
+    ) {
+    }
+
     /**
      * @OA\Get(
      *     path="/api/v1/todos",
@@ -66,31 +72,11 @@ class TodoController extends Controller
      *     )
      * )
      */
-    public function index(Request $request)
+    public function index(ListTodoRequest $request): JsonResponse
     {
-        $query = Todo::query();
+        $result = $this->todoService->list($request->getData());
 
-        // Search by title or details
-        if ($search = $request->input('search')) {
-            $query->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('details', 'like', "%{$search}%");
-            });
-        }
-
-        // Filter by status
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        // Sort
-        $sortField = $request->input('sort_by', 'created_at');
-        $sortDirection = $request->input('sort_direction', 'desc');
-        $query->orderBy($sortField, $sortDirection);
-
-        return response()->json([
-            'data' => $query->paginate(10)
-        ]);
+        return response()->json($result->toArray(), $result->code);
     }
 
     /**
@@ -127,25 +113,11 @@ class TodoController extends Controller
      *     )
      * )
      */
-    public function store(Request $request)
+    public function store(StoreTodoRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'details' => 'required|string',
-            'status' => 'required|in:completed,in progress,not started',
-        ]);
+        $result = $this->todoService->create($request->getData());
 
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $todo = Todo::create($validator->validated());
-
-        return response()->json([
-            'data' => $todo
-        ], Response::HTTP_CREATED);
+        return response()->json($result->toArray(), $result->code);
     }
 
     /**
@@ -179,11 +151,11 @@ class TodoController extends Controller
      *     )
      * )
      */
-    public function show(Todo $todo)
+    public function show(string|int $todo): JsonResponse
     {
-        return response()->json([
-            'data' => $todo
-        ]);
+        $result = $this->todoService->show($todo);
+
+        return response()->json($result->toArray(), $result->code);
     }
 
     /**
@@ -229,25 +201,11 @@ class TodoController extends Controller
      *     )
      * )
      */
-    public function update(Request $request, Todo $todo)
+    public function update(UpdateTodoRequest $request, string|int $todo): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|required|string|max:255',
-            'details' => 'sometimes|required|string',
-            'status' => 'sometimes|required|in:completed,in progress,not started',
-        ]);
+        $result = $this->todoService->update($todo, $request->getData());
 
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $todo->update($validator->validated());
-
-        return response()->json([
-            'data' => $todo
-        ]);
+        return response()->json($result->toArray(), $result->code);
     }
 
     /**
@@ -271,9 +229,10 @@ class TodoController extends Controller
      *     )
      * )
      */
-    public function destroy(Todo $todo)
+    public function destroy(string|int $todo): JsonResponse
     {
-        $todo->delete();
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+        $result = $this->todoService->delete($todo);
+
+        return response()->json($result->toArray(), $result->code);
     }
 }
