@@ -1,8 +1,8 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Todo API",
-        "description": "A simple Todo REST API",
+        "title": "Todo API Documentation",
+        "description": "API documentation for Todo management",
         "version": "1.0.0"
     },
     "paths": {
@@ -17,7 +17,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search todos by title or details",
+                        "description": "Search term for title or details",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -26,7 +26,7 @@
                     {
                         "name": "status",
                         "in": "query",
-                        "description": "Filter todos by status",
+                        "description": "Filter by status",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -43,7 +43,12 @@
                         "description": "Field to sort by",
                         "required": false,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "title",
+                                "created_at",
+                                "status"
+                            ]
                         }
                     },
                     {
@@ -67,33 +72,53 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "integer"
-                                                    },
-                                                    "title": {
-                                                        "type": "string"
-                                                    },
-                                                    "details": {
-                                                        "type": "string"
-                                                    },
-                                                    "status": {
-                                                        "type": "string"
-                                                    },
-                                                    "created_at": {
-                                                        "type": "string",
-                                                        "format": "datetime"
-                                                    },
-                                                    "updated_at": {
-                                                        "type": "string",
-                                                        "format": "datetime"
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "title": {
+                                                                "type": "string"
+                                                            },
+                                                            "details": {
+                                                                "type": "string"
+                                                            },
+                                                            "status": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "completed",
+                                                                    "in progress",
+                                                                    "not started"
+                                                                ]
+                                                            },
+                                                            "created_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            },
+                                                            "updated_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            }
+                                                        },
+                                                        "type": "object"
                                                     }
                                                 },
-                                                "type": "object"
-                                            }
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -121,7 +146,8 @@
                                 ],
                                 "properties": {
                                     "title": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "maxLength": 255
                                     },
                                     "details": {
                                         "type": "string"
@@ -147,6 +173,10 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "data": {
                                             "properties": {
                                                 "id": {
@@ -163,11 +193,11 @@
                                                 },
                                                 "created_at": {
                                                     "type": "string",
-                                                    "format": "datetime"
+                                                    "format": "date-time"
                                                 },
                                                 "updated_at": {
                                                     "type": "string",
-                                                    "format": "datetime"
+                                                    "format": "date-time"
                                                 }
                                             },
                                             "type": "object"
@@ -179,22 +209,62 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "title": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The title field is required."
+                                                    }
+                                                },
+                                                "details": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The details field is required."
+                                                    }
+                                                },
+                                                "status": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The selected status is invalid."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
-        "/api/v1/todos/{id}": {
+        "/api/v1/todos/{todo}": {
             "get": {
                 "tags": [
                     "Todos"
                 ],
                 "summary": "Get a specific todo",
-                "operationId": "46bb8970713320b0a5972e07b50eaba1",
+                "operationId": "fbdf1daba13550df6e9bf37f8ddbb3f8",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "todo",
                         "in": "path",
+                        "description": "Todo ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -208,6 +278,10 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "data": {
                                             "properties": {
                                                 "id": {
@@ -224,11 +298,11 @@
                                                 },
                                                 "created_at": {
                                                     "type": "string",
-                                                    "format": "datetime"
+                                                    "format": "date-time"
                                                 },
                                                 "updated_at": {
                                                     "type": "string",
-                                                    "format": "datetime"
+                                                    "format": "date-time"
                                                 }
                                             },
                                             "type": "object"
@@ -240,7 +314,29 @@
                         }
                     },
                     "404": {
-                        "description": "Todo not found"
+                        "description": "Todo not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Todo not found"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -249,11 +345,12 @@
                     "Todos"
                 ],
                 "summary": "Delete a todo",
-                "operationId": "7331e71e9bbf3564f74f618e14dba4d6",
+                "operationId": "14ca0545fd3bc40180cf45538ea8b446",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "todo",
                         "in": "path",
+                        "description": "Todo ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -262,10 +359,48 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "Todo deleted successfully"
+                        "description": "Todo deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Todo not found"
+                        "description": "Todo not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Todo not found"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -274,11 +409,12 @@
                     "Todos"
                 ],
                 "summary": "Update a todo",
-                "operationId": "55b691d5aad79992b049e68d5afebfd1",
+                "operationId": "4b31f5e51b0c50880551df68b915dbd9",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "todo",
                         "in": "path",
+                        "description": "Todo ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -292,7 +428,8 @@
                             "schema": {
                                 "properties": {
                                     "title": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "maxLength": 255
                                     },
                                     "details": {
                                         "type": "string"
@@ -318,6 +455,10 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "data": {
                                             "properties": {
                                                 "id": {
@@ -334,11 +475,11 @@
                                                 },
                                                 "created_at": {
                                                     "type": "string",
-                                                    "format": "datetime"
+                                                    "format": "date-time"
                                                 },
                                                 "updated_at": {
                                                     "type": "string",
-                                                    "format": "datetime"
+                                                    "format": "date-time"
                                                 }
                                             },
                                             "type": "object"
@@ -350,10 +491,64 @@
                         }
                     },
                     "404": {
-                        "description": "Todo not found"
+                        "description": "Todo not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Todo not found"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "title": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The title must not be greater than 255 characters."
+                                                    }
+                                                },
+                                                "status": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The selected status is invalid."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }

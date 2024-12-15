@@ -11,9 +11,9 @@ use Illuminate\Http\JsonResponse;
 
 /**
  * @OA\Info(
- *     title="Todo API",
  *     version="1.0.0",
- *     description="A simple Todo REST API"
+ *     title="Todo API Documentation",
+ *     description="API documentation for Todo management"
  * )
  */
 class TodoController extends Controller
@@ -31,14 +31,14 @@ class TodoController extends Controller
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
-     *         description="Search todos by title or details",
+     *         description="Search term for title or details",
      *         required=false,
      *         @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
      *         name="status",
      *         in="query",
-     *         description="Filter todos by status",
+     *         description="Filter by status",
      *         required=false,
      *         @OA\Schema(type="string", enum={"completed", "in progress", "not started"})
      *     ),
@@ -47,7 +47,7 @@ class TodoController extends Controller
      *         in="query",
      *         description="Field to sort by",
      *         required=false,
-     *         @OA\Schema(type="string")
+     *         @OA\Schema(type="string", enum={"title", "created_at", "status"})
      *     ),
      *     @OA\Parameter(
      *         name="sort_direction",
@@ -60,14 +60,26 @@ class TodoController extends Controller
      *         response=200,
      *         description="List of todos",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="array", @OA\Items(
-     *                 @OA\Property(property="id", type="integer"),
-     *                 @OA\Property(property="title", type="string"),
-     *                 @OA\Property(property="details", type="string"),
-     *                 @OA\Property(property="status", type="string"),
-     *                 @OA\Property(property="created_at", type="string", format="datetime"),
-     *                 @OA\Property(property="updated_at", type="string", format="datetime")
-     *             ))
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="data",
+     *                     type="array",
+     *                     @OA\Items(
+     *                         type="object",
+     *                         @OA\Property(property="id", type="integer"),
+     *                         @OA\Property(property="title", type="string"),
+     *                         @OA\Property(property="details", type="string"),
+     *                         @OA\Property(property="status", type="string", enum={"completed", "in progress", "not started"}),
+     *                         @OA\Property(property="created_at", type="string", format="date-time"),
+     *                         @OA\Property(property="updated_at", type="string", format="date-time")
+     *                     )
+     *                 ),
+     *                 @OA\Property(property="current_page", type="integer"),
+     *                 @OA\Property(property="total", type="integer")
+     *             )
      *         )
      *     )
      * )
@@ -75,7 +87,6 @@ class TodoController extends Controller
     public function index(ListTodoRequest $request): JsonResponse
     {
         $result = $this->todoService->list($request->getData());
-
         return response()->json($result->toArray(), $result->code);
     }
 
@@ -88,7 +99,7 @@ class TodoController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             required={"title", "details", "status"},
-     *             @OA\Property(property="title", type="string"),
+     *             @OA\Property(property="title", type="string", maxLength=255),
      *             @OA\Property(property="details", type="string"),
      *             @OA\Property(property="status", type="string", enum={"completed", "in progress", "not started"})
      *         )
@@ -97,82 +108,118 @@ class TodoController extends Controller
      *         response=201,
      *         description="Todo created successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
      *                 @OA\Property(property="id", type="integer"),
      *                 @OA\Property(property="title", type="string"),
      *                 @OA\Property(property="details", type="string"),
      *                 @OA\Property(property="status", type="string"),
-     *                 @OA\Property(property="created_at", type="string", format="datetime"),
-     *                 @OA\Property(property="updated_at", type="string", format="datetime")
+     *                 @OA\Property(property="created_at", type="string", format="date-time"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time")
      *             )
      *         )
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Validation error"
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="title",
+     *                     type="array",
+     *                     @OA\Items(type="string", example="The title field is required.")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="details",
+     *                     type="array",
+     *                     @OA\Items(type="string", example="The details field is required.")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="status",
+     *                     type="array",
+     *                     @OA\Items(type="string", example="The selected status is invalid.")
+     *                 )
+     *             )
+     *         )
      *     )
      * )
      */
     public function store(StoreTodoRequest $request): JsonResponse
     {
         $result = $this->todoService->create($request->getData());
-
         return response()->json($result->toArray(), $result->code);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/v1/todos/{id}",
+     *     path="/api/v1/todos/{todo}",
      *     summary="Get a specific todo",
      *     tags={"Todos"},
      *     @OA\Parameter(
-     *         name="id",
+     *         name="todo",
      *         in="path",
      *         required=true,
+     *         description="Todo ID",
      *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Todo details",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
      *                 @OA\Property(property="id", type="integer"),
      *                 @OA\Property(property="title", type="string"),
      *                 @OA\Property(property="details", type="string"),
      *                 @OA\Property(property="status", type="string"),
-     *                 @OA\Property(property="created_at", type="string", format="datetime"),
-     *                 @OA\Property(property="updated_at", type="string", format="datetime")
+     *                 @OA\Property(property="created_at", type="string", format="date-time"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time")
      *             )
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Todo not found"
+     *         description="Todo not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="message", type="string", example="Todo not found")
+     *             )
+     *         )
      *     )
      * )
      */
     public function show(string|int $todo): JsonResponse
     {
         $result = $this->todoService->show($todo);
-
         return response()->json($result->toArray(), $result->code);
     }
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/todos/{id}",
+     *     path="/api/v1/todos/{todo}",
      *     summary="Update a todo",
      *     tags={"Todos"},
      *     @OA\Parameter(
-     *         name="id",
+     *         name="todo",
      *         in="path",
      *         required=true,
+     *         description="Todo ID",
      *         @OA\Schema(type="integer")
      *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="title", type="string"),
+     *             @OA\Property(property="title", type="string", maxLength=255),
      *             @OA\Property(property="details", type="string"),
      *             @OA\Property(property="status", type="string", enum={"completed", "in progress", "not started"})
      *         )
@@ -181,58 +228,97 @@ class TodoController extends Controller
      *         response=200,
      *         description="Todo updated successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
      *                 @OA\Property(property="id", type="integer"),
      *                 @OA\Property(property="title", type="string"),
      *                 @OA\Property(property="details", type="string"),
      *                 @OA\Property(property="status", type="string"),
-     *                 @OA\Property(property="created_at", type="string", format="datetime"),
-     *                 @OA\Property(property="updated_at", type="string", format="datetime")
+     *                 @OA\Property(property="created_at", type="string", format="date-time"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time")
      *             )
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Todo not found"
+     *         description="Todo not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="message", type="string", example="Todo not found")
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Validation error"
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="title",
+     *                     type="array",
+     *                     @OA\Items(type="string", example="The title must not be greater than 255 characters.")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="status",
+     *                     type="array",
+     *                     @OA\Items(type="string", example="The selected status is invalid.")
+     *                 )
+     *             )
+     *         )
      *     )
      * )
      */
     public function update(UpdateTodoRequest $request, string|int $todo): JsonResponse
     {
         $result = $this->todoService->update($todo, $request->getData());
-
         return response()->json($result->toArray(), $result->code);
     }
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/todos/{id}",
+     *     path="/api/v1/todos/{todo}",
      *     summary="Delete a todo",
      *     tags={"Todos"},
      *     @OA\Parameter(
-     *         name="id",
+     *         name="todo",
      *         in="path",
      *         required=true,
+     *         description="Todo ID",
      *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Response(
      *         response=204,
-     *         description="Todo deleted successfully"
+     *         description="Todo deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object")
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Todo not found"
+     *         description="Todo not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="message", type="string", example="Todo not found")
+     *             )
+     *         )
      *     )
      * )
      */
     public function destroy(string|int $todo): JsonResponse
     {
         $result = $this->todoService->delete($todo);
-
         return response()->json($result->toArray(), $result->code);
     }
 }
